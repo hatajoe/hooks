@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -32,16 +33,21 @@ func (d Dispatcher) Listen(endpoint, port string) error {
 		e, err := d.eventParser(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			fprintf(w, "%s", err.Error())
 			return
 		}
 		if handler, ok := d.handlers[e]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("event is not registered: `%s`", e)))
+			fprintf(w, "event is not registered: `%s`", e)
 			return
 		} else {
 			handler(w, r)
 		}
 	})
 	return http.ListenAndServe(port, nil)
+}
+
+// fprintf is ignore return value of fmt.Fprintf
+func fprintf(w io.Writer, format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(w, format, args...)
 }
