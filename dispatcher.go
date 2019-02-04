@@ -5,29 +5,29 @@ import (
 	"net/http"
 )
 
-type dispatcher struct {
+type Dispatcher struct {
 	eventParser func(r *http.Request) (string, error)
 	handlers    map[string]http.HandlerFunc
 }
 
-// NewDispatcher returns the event dispatcher object
+// NewDispatcher returns the event Dispatcher object
 // The argument `eventParser` is that parses event string from *http.Request
-func NewDispatcher(eventParser func(r *http.Request) (string, error)) *dispatcher {
-	return &dispatcher{
+func NewDispatcher(eventParser func(r *http.Request) (string, error)) *Dispatcher {
+	return &Dispatcher{
 		eventParser: eventParser,
 		handlers:    map[string]http.HandlerFunc{},
 	}
 }
 
 // On adds a handler corresponding the specific event string
-func (d *dispatcher) On(event string, handler http.HandlerFunc) {
+func (d *Dispatcher) On(event string, handler http.HandlerFunc) {
 	d.handlers[event] = handler
 }
 
 // Listen starts HTTP server that handling the registered event
 // The first argument `endpoint` is the path of the hooks URI (e.g, "/webhooks")
 // The second argument `port` is a listen port (e.g, ":3000")
-func (d dispatcher) Listen(endpoint, port string) error {
+func (d Dispatcher) Listen(endpoint, port string) error {
 	http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
 		e, err := d.eventParser(r)
 		if err != nil {
