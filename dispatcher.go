@@ -35,12 +35,13 @@ func (d Dispatcher) Listen(endpoint, port string) error {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		if _, ok := d.handlers[e]; !ok {
+		if handler, ok := d.handlers[e]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(fmt.Sprintf("event is not registered: `%s`", e)))
 			return
+		} else {
+			handler(w, r)
 		}
-		d.handlers[e](w, r)
 	})
 	return http.ListenAndServe(port, nil)
 }
