@@ -30,7 +30,5 @@ func main() {
 	if err := dispatcher.Listen("/webhooks", ":3000"); err != nil {
 		panic(err)
 	}
-
-	fmt.Println("shutting down correctly")
 }
 ```
