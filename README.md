@@ -12,20 +12,19 @@ import (
 	"net/http"
 
 	"github.com/hatajoe/hooks"
+	"github.com/hatajoe/hooks/github"
 )
 
 func main() {
-	dispatcher := hooks.NewDispatcher(func(r *http.Request) (string, error) {
-		event := r.Header.Get("X-GitHub-Event")
-		if event == "" {
-			return "", fmt.Errorf("X-GitHub-Event is empty")
-		}
-		return event, nil
-	})
+	dispatcher := hooks.NewDispatcher(&github.Parser{})
 
-	dispatcher.On("push", func(w http.ResponseWriter, r *http.Request) {
+    verifier := &github.VerifyMiddleware{
+        secret: "webhook secret",
+    }
+
+	dispatcher.On("push", verifier.Verify(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("push event detected")
-	})
+	}))
 
 	if err := dispatcher.Listen("/webhooks", ":3000"); err != nil {
 		panic(err)

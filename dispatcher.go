@@ -2,20 +2,25 @@ package hooks
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 )
 
+// EventParser is the event parser interface of http.Request
+type EventParser interface {
+	GetEvent(r *http.Request) (string, error)
+}
+
+// Dispatcher is HTTP server that handles the event of http.Request
 type Dispatcher struct {
-	eventParser func(r *http.Request) (string, error)
+	eventParser EventParser
 	handlers    map[string]http.HandlerFunc
 }
 
 // NewDispatcher returns the event Dispatcher object
-// The argument `eventParser` is that parses event string from *http.Request
-func NewDispatcher(eventParser func(r *http.Request) (string, error)) *Dispatcher {
+// The argument `p` is that parses event string from *http.Request
+func NewDispatcher(p EventParser) *Dispatcher {
 	return &Dispatcher{
-		eventParser: eventParser,
+		eventParser: p,
 		handlers:    map[string]http.HandlerFunc{},
 	}
 }
@@ -30,24 +35,17 @@ func (d *Dispatcher) On(event string, handler http.HandlerFunc) {
 // The second argument `port` is a listen port (e.g, ":3000")
 func (d Dispatcher) Listen(endpoint, port string) error {
 	http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
-		e, err := d.eventParser(r)
+		e, err := d.eventParser.GetEvent(r)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fprintf(w, "%s", err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if handler, ok := d.handlers[e]; !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			fprintf(w, "event is not registered: `%s`", e)
+			http.Error(w, fmt.Sprintf("event is not registered: `%s`", e), http.StatusBadRequest)
 			return
 		} else {
 			handler(w, r)
 		}
 	})
 	return http.ListenAndServe(port, nil)
-}
-
-// fprintf is ignore return value of fmt.Fprintf
-func fprintf(w io.Writer, format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(w, format, args...)
 }
