@@ -3,11 +3,12 @@ package github
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // VerifyMiddleware verify payload
@@ -33,9 +34,8 @@ func (m VerifyMiddleware) Verify(handler http.Handler) http.HandlerFunc {
 			return
 		}
 
-		signature := r.Header.Get("X-Hub-Signature")
-		if signature != makeHMAC(body, m.secret) {
-			http.Error(w, fmt.Sprintf("Verify signature failed: %v", err), http.StatusUnauthorized)
+		if !verifySignature([]byte(m.secret), r.Header.Get("X-Hub-Signature"), body) {
+			http.Error(w, "Verify signature failed", http.StatusUnauthorized)
 			return
 		}
 
@@ -45,8 +45,24 @@ func (m VerifyMiddleware) Verify(handler http.Handler) http.HandlerFunc {
 	})
 }
 
-func makeHMAC(payload []byte, secret string) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	return hex.EncodeToString(mac.Sum(nil))
+// ref: https://gist.github.com/rjz/b51dc03061dbcff1c521
+func verifySignature(secret []byte, signature string, body []byte) bool {
+
+	const signaturePrefix = "sha1="
+	const signatureLength = 45 // len(SignaturePrefix) + len(hex(sha1))
+
+	if len(signature) != signatureLength || !strings.HasPrefix(signature, signaturePrefix) {
+		return false
+	}
+
+	actual := make([]byte, 20)
+	hex.Decode(actual, []byte(signature[5:]))
+
+	return hmac.Equal(signBody(secret, body), actual)
+}
+
+func signBody(secret, body []byte) []byte {
+	computed := hmac.New(sha1.New, secret)
+	computed.Write(body)
+	return []byte(computed.Sum(nil))
 }
