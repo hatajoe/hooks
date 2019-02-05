@@ -31,22 +31,26 @@ func (d *Dispatcher) On(event string, handler http.HandlerFunc) {
 	d.handlers[event] = handler
 }
 
+// implements http.Handler
+func (d *Dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	e, err := d.eventParser.Parse(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if handler, ok := d.handlers[e]; !ok {
+		http.Error(w, fmt.Sprintf("event is not registered: `%s`", e), http.StatusBadRequest)
+		return
+	} else {
+		handler(w, r)
+	}
+}
+
 // Listen starts HTTP server that handling the registered event
-// The first argument `endpoint` is the path of the hooks URI (e.g, "/webhooks")
-// The second argument `port` is a listen port (e.g, ":3000")
-func (d Dispatcher) Listen(endpoint, port string) error {
-	http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
-		e, err := d.eventParser.Parse(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if handler, ok := d.handlers[e]; !ok {
-			http.Error(w, fmt.Sprintf("event is not registered: `%s`", e), http.StatusBadRequest)
-			return
-		} else {
-			handler(w, r)
-		}
-	})
-	return http.ListenAndServe(port, nil)
+// The first argument `pattern` is the path of the hooks URI (e.g, "/webhooks")
+// The second argument `addr` is a listen address port (e.g, "localhost:3000", ":3000")
+func (d *Dispatcher) Listen(pattern, addr string) error {
+	http.Handle(pattern, d)
+	return http.ListenAndServe(addr, nil)
 }
