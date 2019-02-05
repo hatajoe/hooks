@@ -9,6 +9,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/hatajoe/hooks"
@@ -16,18 +17,17 @@ import (
 )
 
 func main() {
-	dispatcher := hooks.NewDispatcher(&github.Parser{})
+	dispatcher := hooks.NewDispatcher(&github.EventParser{})
 
-    verifier := &github.VerifyMiddleware{
-        secret: "webhook secret",
-    }
-
+	verifier := &github.VerifyMiddleware{
+		secret: "webhook secret",
+	}
 	dispatcher.On("push", verifier.Verify(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("push event detected")
 	}))
 
 	if err := dispatcher.Listen("/webhooks", ":3000"); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 ```

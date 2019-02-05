@@ -7,7 +7,8 @@ import (
 
 // EventParser is the event parser interface of http.Request
 type EventParser interface {
-	GetEvent(r *http.Request) (string, error)
+	// Parse parses the event name from http.Request
+	Parse(r *http.Request) (string, error)
 }
 
 // Dispatcher is HTTP server that handles the event of http.Request
@@ -35,7 +36,7 @@ func (d *Dispatcher) On(event string, handler http.HandlerFunc) {
 // The second argument `port` is a listen port (e.g, ":3000")
 func (d Dispatcher) Listen(endpoint, port string) error {
 	http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
-		e, err := d.eventParser.GetEvent(r)
+		e, err := d.eventParser.Parse(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
