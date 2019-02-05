@@ -19,9 +19,7 @@ func TestVerifyCorrect(t *testing.T) {
 	req.Header.Set("X-Hub-Signature", signature)
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(payload))
 
-	verifier := &VerifyMiddleware{
-		secret: secret,
-	}
+	verifier := NewVerifyMiddleware(secret)
 
 	handler := verifier.Verify(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -48,9 +46,7 @@ func TestVerifyFailure(t *testing.T) {
 	req.Header.Set("X-Hub-Signature", signature)
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(payload))
 
-	verifier := &VerifyMiddleware{
-		secret: "dummy secret",
-	}
+	verifier := NewVerifyMiddleware("dummy secret")
 
 	handler := verifier.Verify(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -16,6 +16,14 @@ type VerifyMiddleware struct {
 	secret string
 }
 
+// NewVerifyMiddleware returns the VerifyMiddleware instance
+// The first argument `secret` is GitHub webhook secret token
+func NewVerifyMiddleware(secret string) *VerifyMiddleware {
+	return &VerifyMiddleware{
+		secret: secret,
+	}
+}
+
 // Verify verify the payload signature and call next handler
 func (m VerifyMiddleware) Verify(handler http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

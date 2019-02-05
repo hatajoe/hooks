@@ -19,9 +19,8 @@ import (
 func main() {
 	dispatcher := hooks.NewDispatcher(&github.EventParser{})
 
-	verifier := &github.VerifyMiddleware{
-		secret: "webhook secret",
-	}
+	verifier := github.NewVerifyMiddleware("webhook secret")
+
 	dispatcher.On("push", verifier.Verify(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("push event detected")
 	}))
