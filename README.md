@@ -49,12 +49,12 @@ import (
 
 func main() {
 	dispatcher := hooks.NewDispatcher(&slack.EventParser{
-        ChallengeEventType: "challenge",
-        VerifyToken: true,
-        VerificationToken: "Slack event API secret token",    
-    })
+		ChallengeEventType: "challenge",
+		VerifyToken:        true,
+		VerificationToken:  "Slack event API secret token",
+	})
 
-    dispatcher.On("challenge", slack.ChallengeHandler)
+	dispatcher.On("challenge", slack.ChallengeHandler)
 	dispatcher.On("app_mention", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("app_mention event detected")
 	})

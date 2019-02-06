@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/nlopes/slack/slackevents"
@@ -14,17 +15,20 @@ import (
 func ChallengeHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Printf(fmt.Sprintf("Read request body failed: %v", err))
 		http.Error(w, fmt.Sprintf("Read request body failed: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	eventsAPIEvent, err := slackevents.ParseEvent(json.RawMessage(body), slackevents.OptionNoVerifyToken())
 	if err != nil {
+		log.Printf(fmt.Sprintf("Parse event error: %v", err))
 		http.Error(w, fmt.Sprintf("Parse event error: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if eventsAPIURLVerificationEvent, ok := eventsAPIEvent.Data.(*slackevents.EventsAPIURLVerificationEvent); !ok {
+		log.Printf("Unexpected event type detected: *slackevents.EventsAPIURLVerificationEvent is expected")
 		http.Error(w, "Unexpected event type detected: *slackevents.EventsAPIURLVerificationEvent is expected", http.StatusInternalServerError)
 	} else {
 		w.Header().Set("Content-Type", "text/plain")

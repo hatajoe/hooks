@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -36,10 +37,12 @@ func (d *Dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	e, err := d.eventParser.Parse(r)
 	if err != nil {
+		log.Printf(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if handler, ok := d.handlers[e]; !ok {
+		log.Printf(fmt.Sprintf("event is not registered: `%s`", e))
 		http.Error(w, fmt.Sprintf("event is not registered: `%s`", e), http.StatusBadRequest)
 		return
 	} else {
