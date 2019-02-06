@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestParserCorrect(t *testing.T) {
+func TestParser_Parse_Correct(t *testing.T) {
 
 	expect := "push"
 
@@ -20,7 +20,7 @@ func TestParserCorrect(t *testing.T) {
 	}
 }
 
-func TestParserFailure(t *testing.T) {
+func TestParser_Parse_Failure(t *testing.T) {
 	req := httptest.NewRequest("POST", "/webhooks", nil)
 	req.Header.Set("X-Event", "push")
 
