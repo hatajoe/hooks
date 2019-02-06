@@ -34,8 +34,8 @@ func (m VerifyMiddleware) Verify(handler http.Handler) http.HandlerFunc {
 			return
 		}
 
-		if !verifySignature([]byte(m.secret), r.Header.Get("X-Hub-Signature"), body) {
-			http.Error(w, "Verify signature failed", http.StatusUnauthorized)
+		if err := verifySignature([]byte(m.secret), r.Header.Get("X-Hub-Signature"), body); err != nil {
+			http.Error(w, fmt.Sprintf("Verify signature failed: %v", err), http.StatusUnauthorized)
 			return
 		}
 
@@ -46,19 +46,27 @@ func (m VerifyMiddleware) Verify(handler http.Handler) http.HandlerFunc {
 }
 
 // ref: https://gist.github.com/rjz/b51dc03061dbcff1c521
-func verifySignature(secret []byte, signature string, body []byte) bool {
+func verifySignature(secret []byte, signature string, body []byte) error {
 
 	const signaturePrefix = "sha1="
 	const signatureLength = 45 // len(SignaturePrefix) + len(hex(sha1))
 
-	if len(signature) != signatureLength || !strings.HasPrefix(signature, signaturePrefix) {
-		return false
+	if len(signature) != signatureLength {
+		return fmt.Errorf("invalid signature length: sig=%s, len=%d", signature, len(signature))
+	}
+
+	if !strings.HasPrefix(signature, signaturePrefix) {
+		return fmt.Errorf("signature doesn't have prefix")
 	}
 
 	actual := make([]byte, 20)
 	hex.Decode(actual, []byte(signature[5:]))
 
-	return hmac.Equal(signBody(secret, body), actual)
+	if !hmac.Equal(signBody(secret, body), actual) {
+		return fmt.Errorf("signed body is not equal to signature")
+	}
+
+	return nil
 }
 
 func signBody(secret, body []byte) []byte {

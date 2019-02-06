@@ -2,18 +2,17 @@ package github
 
 import (
 	"bytes"
+	"encoding/hex"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestVerifyCorrect(t *testing.T) {
-
-	secret := "test"
+func TestVerifyMiddleware_Verify_Correct(t *testing.T) {
+	secret := "test secret"
 	payload := []byte("{}")
-
-	signature := makeHMAC(payload, secret)
+	signature := makeSignature([]byte(secret), payload)
 
 	req := httptest.NewRequest("POST", "/webhooks", nil)
 	req.Header.Set("X-Hub-Signature", signature)
@@ -31,16 +30,14 @@ func TestVerifyCorrect(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Error("verify sigunature failed")
+		t.Error(rec.Body)
 	}
 }
 
-func TestVerifyFailure(t *testing.T) {
-
-	secret := "test"
+func TestVerifyMiddleware_Verify_Failure(t *testing.T) {
+	secret := "test secret"
 	payload := []byte("{}")
-
-	signature := makeHMAC(payload, secret)
+	signature := makeSignature([]byte(secret), payload)
 
 	req := httptest.NewRequest("POST", "/webhooks", nil)
 	req.Header.Set("X-Hub-Signature", signature)
@@ -60,4 +57,8 @@ func TestVerifyFailure(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("returning HTTP status code is not expected: %v", rec.Code)
 	}
+}
+
+func makeSignature(secret, payload []byte) string {
+	return "sha1=" + hex.EncodeToString(signBody(secret, payload))
 }
