@@ -64,3 +64,7 @@ func main() {
 	}
 }
 ```
+
+## Bot using hooks example
+
+https://github.com/hatajoe/minibot
