@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -27,6 +28,20 @@ type EventParser struct {
 	VerificationToken string
 }
 
+type bufferBody struct {
+	parent io.Closer
+	buf    *bytes.Buffer
+}
+
+func (b *bufferBody) Read(p []byte) (int, error) {
+	return b.buf.Read(p)
+}
+
+func (b *bufferBody) Close() error {
+	b.buf = nil
+	return b.parent.Close()
+}
+
 // Parse returns the event string from http.Request
 // If VerifyToken is true, verify token before event parsing
 func (p EventParser) Parse(r *http.Request) (string, error) {
@@ -35,7 +50,10 @@ func (p EventParser) Parse(r *http.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	r.Body = &bufferBody{
+		parent: r.Body,
+		buf:    bytes.NewBuffer(body),
+	}
 
 	opts := []slackevents.Option{}
 	if p.VerifyToken {
